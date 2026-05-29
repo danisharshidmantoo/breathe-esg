@@ -50,6 +50,18 @@ def _safe_float(val):
         return None
 
 
+def _clean_raw(row_dict: dict) -> dict:
+    """Replace NaN/inf with None so the dict is JSON-serialisable."""
+    import math
+    cleaned = {}
+    for k, v in row_dict.items():
+        if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+            cleaned[k] = None
+        else:
+            cleaned[k] = v
+    return cleaned
+
+
 def _parse_date(val) -> date | None:
     if pd.isna(val) if hasattr(pd, 'isna') else val is None:
         return None
@@ -166,7 +178,7 @@ def parse_sap(file_obj) -> list[dict[str, Any]]:
 
     records = []
     for _, row in df.iterrows():
-        raw = row.to_dict()
+        raw = _clean_raw(row.to_dict())
 
         raw_qty = _safe_float(row.get('quantity'))
         raw_unit_str = str(row.get('unit', '')).strip().lower()
@@ -256,7 +268,7 @@ def parse_utility_csv(file_obj) -> list[dict[str, Any]]:
 
     records = []
     for _, row in df.iterrows():
-        raw = row.to_dict()
+        raw = _clean_raw(row.to_dict())
 
         kwh = _safe_float(row.get('kwh'))
         period_start = _parse_date(row.get('period_start') or row.get('bill_date'))
@@ -379,7 +391,7 @@ def parse_travel(file_obj) -> list[dict[str, Any]]:
 
     records = []
     for _, row in df.iterrows():
-        raw = row.to_dict()
+        raw = _clean_raw(row.to_dict())
 
         mode = str(row.get('travel_type', 'flight')).lower().strip()
         travel_date = _parse_date(row.get('travel_date'))
