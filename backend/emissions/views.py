@@ -1,4 +1,5 @@
 import io
+import math
 from datetime import datetime
 
 from django.db import transaction
@@ -17,51 +18,43 @@ from .serializers import (
 )
 
 
-class UploadView(APIView):
-    """
-    POST /api/upload/
-    Accepts a file + source type, runs the right parser,
-    bulk-creates records in one transaction.
-    """
+def _safe_num(val):
+    if val is None:
+        return 0
+    try:
+        if math.isnan(val) or math.isinf(val):
+            return 0
+    except (TypeError, ValueError):
+        return 0
+    return round(val, 4)
 
+
+class UploadView(APIView):
     def post(self, request):
         source = request.data.get('source')
         file_obj = request.FILES.get('file')
 
         if not source or not file_obj:
-            return Response(
-                {'error': 'Both source and file are required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'Both source and file are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if source not in ('sap', 'utility', 'travel'):
-            return Response(
-                {'error': f'Invalid source "{source}". Must be sap, utility, or travel.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': f'Invalid source "{source}".'}, status=status.HTTP_400_BAD_REQUEST)
 
         filename = file_obj.name.lower()
 
         try:
             file_bytes = file_obj.read()
-
             if source == 'sap':
                 records_data = parse_sap(io.BytesIO(file_bytes))
-
             elif source == 'utility':
                 if filename.endswith('.pdf'):
                     records_data = parse_utility_pdf(io.BytesIO(file_bytes))
                 else:
                     records_data = parse_utility_csv(io.BytesIO(file_bytes))
-
             elif source == 'travel':
                 records_data = parse_travel(io.BytesIO(file_bytes))
-
         except Exception as exc:
-            return Response(
-                {'error': f'Parse error: {str(exc)}'},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            return Response({'error': f'Parse error: {str(exc)}'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         with transaction.atomic():
             batch = UploadBatch.objects.create(
@@ -69,34 +62,31 @@ class UploadView(APIView):
                 original_filename=file_obj.name,
                 row_count=len(records_data),
             )
-
             records = []
             for rd in records_data:
-                # Strip batch key if accidentally included
                 rd.pop('batch', None)
+                # Sanitize float fields
+                for field in ('quantity', 'raw_quantity', 'co2e_kg', 'emission_factor_used', 'distance_km', 'cost_amount'):
+                    v = rd.get(field)
+                    if v is not None:
+                        try:
+                            if math.isnan(v) or math.isinf(v):
+                                rd[field] = None
+                        except (TypeError, ValueError):
+                            rd[field] = None
                 records.append(EmissionRecord(batch=batch, **rd))
 
             EmissionRecord.objects.bulk_create(records)
 
-        return Response(
-            {
-                'batch_id': batch.id,
-                'source': source,
-                'rows_created': len(records_data),
-                'message': f'{len(records_data)} records imported successfully.',
-            },
-            status=status.HTTP_201_CREATED
-        )
+        return Response({
+            'batch_id': batch.id,
+            'source': source,
+            'rows_created': len(records_data),
+            'message': f'{len(records_data)} records imported successfully.',
+        }, status=status.HTTP_201_CREATED)
 
 
 class EmissionRecordViewSet(viewsets.ModelViewSet):
-    """
-    GET  /api/records/          – list with filters
-    GET  /api/records/{id}/     – single record
-    PATCH /api/records/{id}/    – analyst update (status, note)
-    POST /api/records/{id}/approve/
-    POST /api/records/{id}/reject/
-    """
     queryset = EmissionRecord.objects.select_related('batch').all()
     serializer_class = EmissionRecordSerializer
 
@@ -108,7 +98,6 @@ class EmissionRecordViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         params = self.request.query_params
-
         source = params.get('source')
         status_filter = params.get('status')
         scope = params.get('scope')
@@ -127,10 +116,7 @@ class EmissionRecordViewSet(viewsets.ModelViewSet):
         if date_to:
             qs = qs.filter(activity_date__lte=date_to)
         if search:
-            qs = qs.filter(
-                Q(description__icontains=search) |
-                Q(vendor_or_provider__icontains=search)
-            )
+            qs = qs.filter(Q(description__icontains=search) | Q(vendor_or_provider__icontains=search))
         return qs
 
     @action(detail=True, methods=['post'])
@@ -162,17 +148,15 @@ class EmissionRecordViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def stats_view(request):
-    """GET /api/stats/ – summary numbers for the dashboard header."""
     qs = EmissionRecord.objects.all()
     return Response({
         'total_records': qs.count(),
         'pending': qs.filter(status='pending').count(),
         'approved': qs.filter(status='approved').count(),
         'rejected': qs.filter(status='rejected').count(),
-        'total_co2e_kg': qs.filter(status='approved').aggregate(
-            t=Sum('co2e_kg'))['t'] or 0,
+        'total_co2e_kg': _safe_num(qs.filter(status='approved').aggregate(t=Sum('co2e_kg'))['t']),
         'by_scope': {
-            s: qs.filter(scope=s).aggregate(t=Sum('co2e_kg'))['t'] or 0
+            s: _safe_num(qs.filter(scope=s).aggregate(t=Sum('co2e_kg'))['t'])
             for s in ['scope1', 'scope2', 'scope3']
         },
         'by_source': {
