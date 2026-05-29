@@ -1,0 +1,5 @@
+Account Number,Supplier,Site,Service From,Service To,Consumption,Currency,Amount
+ACC-2024-001,British Gas,London HQ,2024-01-08,2024-02-06,12400,GBP,1860.00
+ACC-2024-002,EDF Energy,Manchester Office,2024-01-12,2024-02-11,8750,GBP,1312.50
+ACC-2024-003,Octopus Energy,Birmingham Depot,2024-01-05,2024-02-04,21300,GBP,3195.00
+ACC-2024-004,British Gas,London HQ,2024-02-07,2024-03-07,11800,GBP,1770.00

@@ -1,0 +1,9 @@
+Travel Date,Employee,Travel Type,Origin,Destination,Class,Hotel,Nights,Distance_km,Cost,Currency
+2024-01-10,John Smith,Flight,LHR,JFK,Economy,,,0,850.00,GBP
+2024-01-12,John Smith,Hotel,,,,Marriott NYC,3,,450.00,USD
+2024-01-15,John Smith,Taxi,,,,,,,35.00,USD
+2024-01-20,Sarah Lee,Flight,BLR,DXB,Business,,,0,1200.00,INR
+2024-02-01,Mike Chen,Flight,LHR,SIN,Economy,,,0,950.00,GBP
+2024-02-03,Mike Chen,Hotel,,,,Marina Bay Sands,2,,600.00,SGD
+2024-02-08,Priya Sharma,Flight,DEL,LHR,Economy,,,0,780.00,INR
+2024-02-09,Priya Sharma,Hotel,,,,Hilton London,1,,220.00,GBP

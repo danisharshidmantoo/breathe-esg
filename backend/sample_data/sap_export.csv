@@ -1,0 +1,7 @@
+Belegnummer,Buchungsdatum,Lieferantenname,Materialbezeichnung,Menge,Mengeneinheit,Betrag,Währung,Kostenstelle
+5001234,2024-01-15,Shell Deutschland,Diesel Kraftstoff,1200,L,1860.00,EUR,CC-OPS-01
+5001235,2024-01-18,BP UK,Unleaded Petrol,50,Gal,95.00,GBP,CC-OPS-02
+5001236,2024-01-22,Gazprom,Natural Gas,8500,kWh,680.00,EUR,CC-FAC-01
+5001237,2024-02-03,Shell Deutschland,Diesel Kraftstoff,980,Ltr,1519.00,EUR,CC-OPS-01
+5001238,2024-02-10,Esso UK,Diesel,75,gallon,150.00,GBP,CC-OPS-03
+5001239,2024-02-14,Total Energies,Benzin,650,L,1007.50,EUR,CC-OPS-02
