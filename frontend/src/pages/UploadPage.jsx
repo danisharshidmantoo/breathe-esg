@@ -159,9 +159,7 @@ export default function UploadPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {SOURCES.map(s => <UploadCard key={s.id} source={s} />)}
       </div>
-      <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-        <strong>Sample files</strong> are in the repo under <code className="bg-amber-100 px-1 rounded">backend/sample_data/</code> — use those to test the full upload flow.
-      </div>
+
     </div>
   )
 }
